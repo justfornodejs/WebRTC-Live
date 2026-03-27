@@ -17,10 +17,14 @@ WebRTC-Live/
 ├── docker-compose.yml      # SRS Docker 编排
 ├── srs.conf                # SRS 配置文件
 ├── gen_ssl.sh              # SSL 证书生成脚本
+├── deploy.sh               # 服务器部署脚本
+├── DEPLOY.md              # 详细部署文档
 ├── backend/
 │   ├── app.py              # Flask 后端代理
 │   ├── requirements.txt    # Python 依赖
-│   └── .env.example        # 环境变量模板
+│   ├── .env.example        # 环境变量模板
+│   └── recordings/         # 录制文件存储目录
+├── dvr/                   # SRS 服务端录制目录
 └── frontend/
     ├── index.html           # 首页
     ├── publish.html         # 推流页面
@@ -28,6 +32,7 @@ WebRTC-Live/
     ├── css/style.css        # 全局样式
     └── js/
         ├── utils.js         # 公共工具
+        ├── record.js        # 录制模块
         ├── publish.js       # 推流逻辑
         └── play.js          # 拉流逻辑
 ```
@@ -103,6 +108,60 @@ python backend/app.py
 1. 确保已有推流端在推流
 2. 进入拉流页面，点击「开始拉流」
 3. 几秒后即可看到低延迟的实时画面
+
+## 🔴 录制功能
+
+项目支持完整的录制功能，包括前端录制和服务端自动录制。
+
+### 前端录制（浏览器端）
+
+**功能特点**：
+- 推流端和拉流端都支持录制
+- 支持本地下载或服务器上传
+- 实时显示录制时长
+- WebM/MP4 格式
+
+**使用方法**：
+1. 开始推流或拉流后，点击"开始"录制"按钮
+2. 选择保存方式：
+   - **本地下载**：录制完成后自动下载到本地
+   - **服务器存储**：录制完成后自动上传到服务器
+3. 录制过程中可实时查看时长
+4. 点击"停止录制"结束
+
+**服务器部署**：
+```bash
+# 使用自动部署脚本
+./deploy.sh
+
+# 或手动更新（详见 DEPLOY.md）
+git pull
+docker-compose restart
+# 重启 Flask 后端
+pm2 restart webrtc-live
+```
+
+### 服务端录制（SRS DVR）
+
+**功能特点**：
+- SRS 自动录制所有推流
+- 不占用浏览器性能
+- FLV 格式存储
+- 按时间分割录制文件
+
+**配置**：
+- 录制文件存储在 `dvr/` 目录
+- 默认单个文件最长 1 小时
+- 可调整 `srs.conf` 中的 `dvr_duration` 参数
+
+**查看录制文件**：
+```bash
+# 查看 DVR 录制
+ls -la dvr/
+
+# 或通过 Docker
+docker exec srs-server ls -la /usr/local/srs/objs/nginx/nginx/html/dvr/
+```
 
 ## ⚠️ 注意事项
 
