@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WebRTC 拉流播放 - 低延迟实时观看直播流">
+    <title>拉流播放 - WebRTC Live</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="navbar-brand">
+        <span class="logo-icon">📡</span>
+        <span>WebRTC Live</span>
+    </a>
+    <ul class="navbar-nav">
+        <li><a href="/">🏠 首页</a></li>
+        <li><a href="/publish.html">📤 推流</a></li>
+        <li><a href="/play.html" class="active">📥 拉流</a></li>
+    </ul>
+</nav>
+
+<div class="main-container">
+    <div class="page-header">
+        <h1>📥 实时拉流播放</h1>
+        <p class="subtitle">从 SRS 服务器拉取 WebRTC 直播流，低延迟实时播放</p>
+    </div>
+
+    <div class="layout-grid">
+        <!-- 左侧：播放器 -->
+        <div>
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="icon cyan">📺</div>
+                    <div>
+                        <h2>直播播放器</h2>
+                        <p>WebRTC 低延迟播放</p>
+                    </div>
+                </div>
+                <div class="video-container">
+                    <video id="remoteVideo" autoplay playsinline controls></video>
+                    <div id="videoPlaceholder" class="video-placeholder">
+                        <span class="placeholder-icon">📡</span>
+                        <p>点击「开始拉流」观看直播</p>
+                    </div>
+                    <div id="videoOverlay" class="video-overlay hidden">
+                        <span class="video-badge live">● LIVE</span>
+                        <span class="video-badge info">WebRTC</span>
+                    </div>
+                </div>
+                <div class="status-bar">
+                    <div class="status-indicator">
+                        <span id="statusDot" class="status-dot idle"></span>
+                        <span id="statusText">未播放</span>
+                    </div>
+                    <span id="durationText" class="text-muted text-sm">00:00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：控制面板 -->
+        <div class="sidebar-stack">
+            <!-- 播放控制 -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="icon emerald">⚙️</div>
+                    <div>
+                        <h2>播放控制</h2>
+                        <p>控制拉流播放</p>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button id="startPlayBtn" class="btn btn-success btn-block">
+                        ▶️ 开始拉流
+                    </button>
+                    <button id="stopPlayBtn" class="btn btn-danger btn-block hidden">
+                        ⏹️ 停止播放
+                    </button>
+                </div>
+                <p class="text-muted text-sm mt-2">
+                    💡 提示：请确保推流端已在推流，否则拉流将无法获取到视频画面。
+                </p>
+            </div>
+
+            <!-- 实时统计 -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="icon blue">📊</div>
+                    <div>
+                        <h2>接收统计</h2>
+                        <p>拉流质量数据</p>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    <div style="padding:0.5rem;background:var(--bg-glass);border-radius:var(--radius-sm);">
+                        <div class="text-muted text-sm">分辨率</div>
+                        <div id="statResolution" style="font-weight:700;margin-top:2px;">-</div>
+                    </div>
+                    <div style="padding:0.5rem;background:var(--bg-glass);border-radius:var(--radius-sm);">
+                        <div class="text-muted text-sm">帧率</div>
+                        <div id="statFramerate" style="font-weight:700;margin-top:2px;">-</div>
+                    </div>
+                    <div style="padding:0.5rem;background:var(--bg-glass);border-radius:var(--radius-sm);grid-column:1/-1;">
+                        <div class="text-muted text-sm">接收码率</div>
+                        <div id="statBitrate" style="font-weight:700;margin-top:2px;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日志 -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="icon rose">📋</div>
+                    <div>
+                        <h2>运行日志</h2>
+                        <p>拉流过程详细日志</p>
+                    </div>
+                </div>
+                <div id="logPanel" class="log-panel"></div>
+            </div>
+        </div>
+
+        <!-- 录制面板 -->
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="icon purple">🔴</div>
+                <div>
+                    <h2>本地录制</h2>
+                    <p>录制当前拉流画面</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">录制保存方式</label>
+                <select id="recordSaveMode" class="form-select">
+                    <option value="local">💾 本地下载</option>
+                    <option value="server">☁️ 服务器存储</option>
+                </select>
+            </div>
+            <div class="btn-group mt-2">
+                <button id="startRecordBtn" class="btn btn-danger btn-block" disabled>
+                    🔴 开始录制
+                </button>
+                <button id="stopRecordBtn" class="btn btn-warning btn-block hidden">
+                    ⏹️ 停止录制
+                </button>
+                <button id="downloadRecordBtn" class="btn btn-success btn-block hidden">
+                    ⬇️ 下载视频
+                </button>
+            </div>
+            <div id="recordingInfo" class="mt-2 text-center" style="display:none;">
+                <div class="text-muted text-sm">录制时长</div>
+                <div id="recordDuration" style="font-weight:700;font-size:1.25rem;">00:00:00</div>
+                <div id="recordProgress" class="mt-1 text-muted text-sm hidden">上传中... 0%</div>
+            </div>
+            <p class="text-muted text-sm mt-2">
+                💡 提示：录制功能需要浏览器支持 MediaRecorder API。
+            </p>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>WebRTC Live · 基于 <a href="https://webrtc.org" target="_blank">WebRTC</a> + <a href="https://ossrs.net" target="_blank">SRS</a></p>
+</footer>
+
+<script src="js/utils.js"></script>
+<script src="js/record.js"></script>
+<script src="js/play.js"></script>
+</body>
+</html>

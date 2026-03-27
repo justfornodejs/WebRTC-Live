@@ -1,0 +1,22 @@
+# ============================================================
+# WebRTC + SRS 实时直播 Docker Compose 配置
+# SRS 仅暴露内部 HTTP API + WebRTC UDP，无需 HTTPS
+# ============================================================
+version: "3.8"
+
+services:
+  srs:
+    image: registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5
+    container_name: srs-server
+    restart: always
+    ports:
+      # RTMP 端口（可选，OBS 等工具推流用）
+      - "1935:1935"
+      # HTTP API 端口（Flask 后端访问，无需对外暴露可改为 127.0.0.1:1985:1985）
+      - "1985:1985"
+      # WebRTC UDP 端口（媒体传输，必须暴露）
+      - "8000:8000/udp"
+    volumes:
+      - ./srs.conf:/usr/local/srs/conf/srs.conf
+      - ./dvr:/usr/local/srs/objs/nginx/html/dvr
+    command: ["./objs/srs", "-c", "conf/srs.conf"]

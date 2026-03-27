@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WebRTC + SRS 实时直播平台 - 基于 WebRTC 和 SRS 的低延迟音视频解决方案">
+    <title>WebRTC Live - 实时直播平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+    <a href="/" class="navbar-brand">
+        <span class="logo-icon">📡</span>
+        <span>WebRTC Live</span>
+    </a>
+    <ul class="navbar-nav">
+        <li><a href="/" class="active">🏠 首页</a></li>
+        <li><a href="/publish.html">📤 推流</a></li>
+        <li><a href="/play.html">📥 拉流</a></li>
+    </ul>
+</nav>
+
+<!-- 主内容 -->
+<div class="main-container">
+
+    <!-- Hero 区域 -->
+    <section class="hero">
+        <h1>WebRTC + SRS<br>实时直播平台</h1>
+        <p class="hero-subtitle">
+            基于 WebRTC 技术和 SRS 流媒体服务器，实现浏览器端低延迟（50-300ms）的实时音视频推流与播放，无需安装任何插件。
+        </p>
+        <div class="hero-actions">
+            <a href="/publish.html" class="btn btn-primary btn-lg">📤 开始推流</a>
+            <a href="/play.html" class="btn btn-outline btn-lg">📥 观看直播</a>
+        </div>
+    </section>
+
+    <!-- 架构图 -->
+    <section class="architecture-section">
+        <h2>🏗️ 系统架构</h2>
+        <div class="glass-card">
+            <div class="arch-flow">
+                <div class="arch-node">
+                    <span class="node-icon">🖥️</span>
+                    <span class="node-label">推流端浏览器</span>
+                    <span class="node-desc">屏幕共享 / 摄像头</span>
+                </div>
+                <span class="arch-arrow">➜</span>
+                <div class="arch-node">
+                    <span class="node-icon">🐍</span>
+                    <span class="node-label">Flask 代理</span>
+                    <span class="node-desc">信令转发 / CORS</span>
+                </div>
+                <span class="arch-arrow">➜</span>
+                <div class="arch-node">
+                    <span class="node-icon">📡</span>
+                    <span class="node-label">SRS 服务器</span>
+                    <span class="node-desc">流媒体中转分发</span>
+                </div>
+                <span class="arch-arrow">➜</span>
+                <div class="arch-node">
+                    <span class="node-icon">👥</span>
+                    <span class="node-label">拉流端浏览器</span>
+                    <span class="node-desc">实时播放观看</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 特性卡片 -->
+    <section class="features-grid mt-3">
+        <div class="glass-card feature-card">
+            <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:#6366f1;">⚡</div>
+            <h3>超低延迟</h3>
+            <p>基于 WebRTC 协议，端到端延迟可控制在 50-300ms，远优于 HLS/RTMP，完美适配实时同屏场景。</p>
+        </div>
+        <div class="glass-card feature-card">
+            <div class="feature-icon" style="background:rgba(6,182,212,0.15);color:#06b6d4;">🔌</div>
+            <h3>零插件</h3>
+            <p>纯浏览器原生 API 实现，不依赖 Flash 或任何浏览器插件，主流浏览器（Chrome/Firefox/Edge）开箱即用。</p>
+        </div>
+        <div class="glass-card feature-card">
+            <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:#10b981;">🖥️</div>
+            <h3>多源推流</h3>
+            <p>支持屏幕共享、摄像头、本地视频文件三种推流模式，满足教学、会议、直播等多种场景。</p>
+        </div>
+        <div class="glass-card feature-card">
+            <div class="feature-icon" style="background:rgba(244,63,94,0.15);color:#f43f5e;">📊</div>
+            <h3>实时监控</h3>
+            <p>推/拉流过程中实时展示分辨率、帧率、码率等统计信息，连接状态一目了然。</p>
+        </div>
+        <div class="glass-card feature-card">
+            <div class="feature-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">🐳</div>
+            <h3>Docker 部署</h3>
+            <p>SRS 服务器通过 Docker Compose 一键部署，开箱即用，降低运维成本。</p>
+        </div>
+        <div class="glass-card feature-card">
+            <div class="feature-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">🔒</div>
+            <h3>安全传输</h3>
+            <p>支持 HTTPS + DTLS 加密传输，WebRTC 媒体流自带 SRTP 加密，保障数据安全。</p>
+        </div>
+    </section>
+
+    <!-- 技术参数 -->
+    <div class="glass-card stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">&lt;300ms</div>
+            <div class="stat-label">端到端延迟</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">1080p</div>
+            <div class="stat-label">最高分辨率</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">30fps</div>
+            <div class="stat-label">推流帧率</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">H.264</div>
+            <div class="stat-label">视频编码</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <p>WebRTC Live 实时直播平台 · 基于 <a href="https://webrtc.org" target="_blank">WebRTC</a> + <a href="https://ossrs.net" target="_blank">SRS</a></p>
+</footer>
+
+</body>
+</html>
