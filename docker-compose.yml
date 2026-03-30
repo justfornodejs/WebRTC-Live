@@ -1,35 +1,116 @@
+# ============================================================
+# WebRTC-Live Docker Compose 编排文件
+#
+# 功能描述：编排 WebRTC 实时直播服务的容器部署
+#           包含 Flask 后端代理 + SRS 流媒体服务器
+#
+# 架构说明：
+#   - app 容器：运行 Flask 代理服务，处理浏览器 HTTPS 信令请求
+#   - srs 容器：运行 SRS 服务器，处理 WebRTC 媒体流传输
+#   - 两个容器通过 paas_network 内部网络通信
+#   - SRS 内部端口 1985 不对外暴露，仅通过 app 代理访问
+#
+# 网络安全：
+#   - 使用外部 paas_network 网络实现容器隔离
+#   - SRS API 端口（1985）未映射到宿主机，增强安全性
+#   - 通过 NPM (Nginx Proxy Manager) 实现外部 HTTPS 访问
+#
+# 作者：WebRTC-Live Project
+# 版本：1.0.0
+# 最后修改日期：2026-03-30
+# ============================================================
+
 version: '3.7'
 
+# ============================================================
+# 服务定义
+# ============================================================
 services:
+  # ============================================================
+  # Flask 后端代理服务
+  # ============================================================
   app:
+    # 从当前目录的 Dockerfile 构建镜像
     build: .
+
+    # 容器命名规范：[项目名]-[服务]
     container_name: webrtc-app
+
+    # 重启策略：容器异常退出时自动重启
     restart: always
+
+    # 环境变量配置（禁止硬编码敏感信息）
     environment:
+      # SRS HTTP API 基础地址（内部通信）
+      # 使用 Docker 服务名 'srs' 进行内部 DNS 解析
       - SRS_API_BASE=http://srs:1985
-      - SRS_STREAM_URL=webrtc://10.0.6.62/live/livestream # 指向宿主机 IP
+
+      # WebRTC 流地址
+      # 指向宿主机 IP（10.0.6.62）供外部浏览器连接
+      - SRS_STREAM_URL=webrtc://10.0.6.62/live/livestream
+
+      # Flask 监听地址（所有网络接口）
       - FLASK_HOST=0.0.0.0
+
+      # Flask 监听端口
       - FLASK_PORT=5000
+
+    # 端口映射（仅暴露 Flask 服务端口）
     ports:
-      - "5000:5000"
+      - "5000:5000"  # 映射容器 5000 端口到宿主机 5000
+
+    # 连接到 PaaS 内部网络
     networks:
       - paas_network
+
+    # 服务依赖（确保 SRS 先启动）
     depends_on:
       - srs
+
+    # 目录挂载（持久化录制文件）
     volumes:
+      # 挂载宿主机 ./recordings 到容器内 /app/backend/recordings
+      # 实现录制文件的持久化存储
       - ./recordings:/app/backend/recordings
 
+  # ============================================================
+  # SRS 流媒体服务器
+  # ============================================================
   srs:
+    # 使用官方 SRS 镜像（版本 5）
     image: ossrs/srs:5
-    container_name: webrtc-srs
-    restart: always
-    ports:
-      - "1935:1935"       # RTMP
-      - "1985:1985"       # HTTP API
-      - "8000:8000/udp"   # WebRTC UDP
-    networks:
-      - paas_network
 
+    # 容器命名
+    container_name: webrtc-srs
+
+    # 重启策略
+    restart: always
+
+    # 端口映射
+    ports:
+      # RTMP 协议端口（用于推流）
+      - "1935:1935"
+
+      # SRS HTTP API 端口（仅内部使用）
+      # 注意：根据架构安全原则，此端口可考虑移除
+      # 当前保留用于调试，生产环境应通过 Flask 代理访问
+      - "1985:1985"
+
+      # WebRTC UDP 端口（用于媒体数据传输）
+      # 浏览器通过此端口与 SRS 建立 WebRTC 连接
+      - "8000:8000/udp"
+
+    # 连接到 PaaS 内部网络
+    networks:
+      paas_network:
+        aliases:
+          - srs  # 添加服务名别名，确保容器间可通过 srs 解析
+
+# ============================================================
+# 网络配置
+# ============================================================
 networks:
+  # 使用外部 paas_network 网络
+  # 该网络在部署时已创建，多个 PaaS 服务共享同一网络
   paas_network:
     external: true
