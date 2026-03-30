@@ -1,0 +1,35 @@
+version: '3.7'
+
+services:
+  app:
+    build: .
+    container_name: webrtc-app
+    restart: always
+    environment:
+      - SRS_API_BASE=http://srs:1985
+      - SRS_STREAM_URL=webrtc://10.0.6.62/live/livestream # 指向宿主机 IP
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+    ports:
+      - "5000:5000"
+    networks:
+      - paas_network
+    depends_on:
+      - srs
+    volumes:
+      - ./recordings:/app/backend/recordings
+
+  srs:
+    image: ossrs/srs:5
+    container_name: webrtc-srs
+    restart: always
+    ports:
+      - "1935:1935"       # RTMP
+      - "1985:1985"       # HTTP API
+      - "8000:8000/udp"   # WebRTC UDP
+    networks:
+      - paas_network
+
+networks:
+  paas_network:
+    external: true
