@@ -54,9 +54,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusText = document.getElementById("statusText");
     const durationText = document.getElementById("durationText");
     const logPanel = document.getElementById("logPanel");
-    const resolutionEl = document.getElementById("statResolution");
-    const framerateEl = document.getElementById("statFramerate");
     const bitrateEl = document.getElementById("statBitrate");
+    const snapshotBtn = document.getElementById("snapshotBtn");
+    const cameraDeviceGroup = document.getElementById("cameraDeviceGroup");
+    const videoSource = document.getElementById("videoSource");
+    const enableAudio = document.getElementById("enableAudio");
+    const enableSystemAudio = document.getElementById("enableSystemAudio");
+    const systemAudioGroup = document.getElementById("systemAudioGroup");
+
+    // 初始化设备列表
+    async function initDevices() {
+        try {
+            // 先请求一次权限以获得真实的设备标签
+            await navigator.mediaDevices.getUserMedia({ video: true });
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            videoSource.innerHTML = "";
+            devices.forEach(device => {
+                if (device.kind === "videoinput") {
+                    const option = document.createElement("option");
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${videoSource.length + 1}`;
+                    videoSource.appendChild(option);
+                }
+            });
+        } catch (e) {
+            addLog("获取设备列表失败：" + e.message, "warn");
+        }
+    }
+
+    sourceSelect.addEventListener("change", () => {
+        const val = sourceSelect.value;
+        if (val === "camera") {
+            cameraDeviceGroup.classList.remove("hidden");
+            systemAudioGroup.classList.add("hidden");
+            initDevices();
+        } else {
+            cameraDeviceGroup.classList.add("hidden");
+            // 只有屏幕共享和视频文件支持捕获系统声音
+            systemAudioGroup.classList.remove("hidden");
+        }
+    });
 
     function addLog(msg, level = "info") {
         const time = new Date().toLocaleTimeString("zh-CN", { hour12: false });
@@ -90,38 +127,100 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 3000);
     }
 
+    /**
+     * 核心混音函数：将麦克风音轨和系统音轨混合
+     */
+    async function mixAudio(videoStream, micStream) {
+        // 如果没有音频轨道，直接返回原流
+        const hasMic = micStream && micStream.getAudioTracks().length > 0;
+        const hasSys = videoStream && videoStream.getAudioTracks().length > 0;
+
+        if (!hasMic && !hasSys) return videoStream;
+        if (hasMic && !hasSys) {
+            // 只有麦克风，将麦克风音轨添加到视频流
+            videoStream.addTrack(micStream.getAudioTracks()[0]);
+            return videoStream;
+        }
+        if (!hasMic && hasSys) return videoStream; // 只有系统音
+
+        // 两者都有，执行 Web Audio 混音
+        addLog("正在启动硬件混音引擎...", "info");
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const destination = audioCtx.createMediaStreamDestination();
+
+        const micSource = audioCtx.createMediaStreamSource(micStream);
+        const sysSource = audioCtx.createMediaStreamSource(videoStream);
+
+        micSource.connect(destination);
+        sysSource.connect(destination);
+
+        // 移除原有的系统音轨（如果有），替换为压缩后的混合音轨
+        const mixedAudioTrack = destination.stream.getAudioTracks()[0];
+        videoStream.getAudioTracks().forEach(t => videoStream.removeTrack(t));
+        videoStream.addTrack(mixedAudioTrack);
+
+        return videoStream;
+    }
+
     async function getMediaStream() {
         const source = sourceSelect.value;
-        if (source === "screen") {
-            addLog("正在请求屏幕共享权限...");
-            return await navigator.mediaDevices.getDisplayMedia({
-                video: { cursor: "always", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
-                audio: false
-            });
-        } else if (source === "camera") {
-            addLog("正在请求摄像头权限...");
-            return await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-                audio: false
-            });
-        } else if (source === "video-file") {
-            addLog("请选择本地视频文件...");
-            return await new Promise((resolve, reject) => {
-                const fi = document.createElement("input");
-                fi.type = "file"; fi.accept = "video/*";
-                fi.addEventListener("change", async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) { reject(new Error("未选择文件")); return; }
-                    addLog(`已选择视频：${file.name}`);
-                    const tv = document.createElement("video");
-                    tv.src = URL.createObjectURL(file); tv.muted = true; tv.loop = true;
-                    await tv.play();
-                    resolve(tv.captureStream());
+        const micEnabled = enableAudio.checked;
+        const sysAudioEnabled = enableSystemAudio.checked;
+        
+        let vStream = null;
+        let mStream = null;
+
+        try {
+            // 1. 获取视频源（可能带系统音频）
+            if (source === "screen") {
+                addLog(`正在请求屏幕共享 (系统音频: ${sysAudioEnabled})...`);
+                vStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always", width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: sysAudioEnabled
                 });
-                fi.click();
-            });
+            } else if (source === "camera") {
+                const deviceId = videoSource.value;
+                addLog(`正在请求摄像头权限 (Device: ${deviceId})...`);
+                vStream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false // 摄像头模式下，人声独立通过 micStream 处理
+                });
+            } else if (source === "video-file") {
+                vStream = await new Promise((resolve, reject) => {
+                    const fi = document.createElement("input");
+                    fi.type = "file"; fi.accept = "video/*";
+                    fi.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return reject(new Error("未选择文件"));
+                        addLog(`加载视频文件: ${file.name}`);
+                        const tv = document.createElement("video");
+                        tv.src = URL.createObjectURL(file); tv.muted = true; tv.loop = true;
+                        await tv.play();
+                        resolve(tv.captureStream());
+                    };
+                    fi.click();
+                });
+            }
+
+            // 2. 获取人声麦克风（如果启用）
+            if (micEnabled) {
+                try {
+                    addLog("正在启动麦克风捕获...");
+                    mStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                } catch (ae) {
+                    addLog("麦克风启动失败: " + ae.message, "warn");
+                }
+            }
+
+            // 3. 混音处理
+            return await mixAudio(vStream, mStream);
+
+        } catch (err) {
+            if (err.name === 'NotReadableError') {
+                throw new Error("硬件设备被占用。请关闭占用摄像头/麦克风的其他软件。");
+            }
+            throw err;
         }
-        throw new Error("未知推流源");
     }
 
     async function startPublish() {
@@ -170,9 +269,10 @@ document.addEventListener("DOMContentLoaded", () => {
             publishTimer = setInterval(() => { publishDuration++; durationText.textContent = formatTime(publishDuration); }, 1000);
             startStatsMonitor();
 
-            // 启用录制按钮
+            // 启用录制和拍照按钮
             const recordBtn = document.getElementById("startRecordBtn");
             if (recordBtn) recordBtn.disabled = false;
+            snapshotBtn.disabled = false;
         } catch (err) {
             addLog(`❌ 推流失败: ${err.message}`, "error");
             updateStatus("error", "推流失败");
@@ -203,6 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (publishStream) { publishStream.getTracks().forEach(t => t.stop()); publishStream = null; }
         previewVideo.srcObject = null;
         isPublishing = false;
+        snapshotBtn.disabled = true;
     }
 
     function startStatsMonitor() {
@@ -227,6 +328,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     startBtn.addEventListener("click", startPublish);
     stopBtn.addEventListener("click", stopPublish);
+
+    // 拍照功能实现
+    snapshotBtn.addEventListener("click", () => {
+        if (!previewVideo || !isPublishing) return;
+        
+        try {
+            const canvas = document.createElement("canvas");
+            canvas.width = previewVideo.videoWidth;
+            canvas.height = previewVideo.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
+            
+            const dataURL = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            const time = new Date().toISOString().replace(/[:.]/g, "-");
+            link.download = `snapshot-${time}.png`;
+            link.href = dataURL;
+            link.click();
+            
+            addLog("📸 拍照成功，正在保存...", "success");
+            showToast("截图已保存", "success");
+        } catch (e) {
+            addLog("❌ 拍照失败: " + e.message, "error");
+        }
+    });
 
     addLog("推流模块已加载，等待操作...");
     if (!checkWebRTCSupport()) { addLog("⚠️ 浏览器不支持 WebRTC", "error"); startBtn.disabled = true; }

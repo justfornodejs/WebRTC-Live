@@ -164,9 +164,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             startPlayStatsMonitor();
 
-            // 启用录制按钮
+            // 启用录制和拍照按钮
             const recordBtn = document.getElementById("startRecordBtn");
             if (recordBtn) recordBtn.disabled = false;
+            document.getElementById("playSnapshotBtn").disabled = false;
         } catch (err) {
             addLog(`❌ 拉流失败: ${err.message}`, "error");
             updateStatus("error", "拉流失败");
@@ -197,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         remoteVideo.srcObject = null;
         remoteVideo.pause();
         isPlaying = false;
+        document.getElementById("playSnapshotBtn").disabled = true;
     }
 
     function startPlayStatsMonitor() {
@@ -221,6 +223,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     startBtn.addEventListener("click", startPlay);
     stopBtn.addEventListener("click", stopPlay);
+
+    // 播放端拍照功能实现
+    document.getElementById("playSnapshotBtn").addEventListener("click", () => {
+        if (!remoteVideo || !isPlaying) return;
+        
+        try {
+            const canvas = document.createElement("canvas");
+            canvas.width = remoteVideo.videoWidth;
+            canvas.height = remoteVideo.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(remoteVideo, 0, 0, canvas.width, canvas.height);
+            
+            const dataURL = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            const time = new Date().toISOString().replace(/[:.]/g, "-");
+            link.download = `play-snapshot-${time}.png`;
+            link.href = dataURL;
+            link.click();
+            
+            addLog("📸 画面截图成功", "success");
+            showToast("截图已保存", "success");
+        } catch (e) {
+            addLog("❌ 截图失败: " + e.message, "error");
+        }
+    });
 
     addLog("拉流模块已加载，等待操作...");
     if (!checkWebRTCSupport()) { addLog("⚠️ 浏览器不支持 WebRTC", "error"); startBtn.disabled = true; }

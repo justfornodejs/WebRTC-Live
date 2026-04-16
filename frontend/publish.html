@@ -119,12 +119,32 @@
                         <option value="video-file">📁 视频文件</option>
                     </select>
                 </div>
+                <div id="cameraDeviceGroup" class="form-group hidden">
+                    <label class="form-label">选择摄像头</label>
+                    <select id="videoSource" class="form-select"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">音频设置</label>
+                    <div class="audio-options-card">
+                        <label class="audio-option-item">
+                            <input type="checkbox" id="enableAudio" checked>
+                            <span class="option-label">🎙️ 开启麦克风人声</span>
+                        </label>
+                        <label class="audio-option-item" id="systemAudioGroup">
+                            <input type="checkbox" id="enableSystemAudio">
+                            <span class="option-label">🔊 捕获系统背景音 (需在屏幕分享时勾选)</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="btn-group mt-2">
                     <button id="startPublishBtn" class="btn btn-primary btn-block">
                         ▶️ 开始推流
                     </button>
                     <button id="stopPublishBtn" class="btn btn-danger btn-block hidden">
                         ⏹️ 停止推流
+                    </button>
+                    <button id="snapshotBtn" class="btn btn-outline btn-block" disabled title="拍照并保存当前画面">
+                        📸 立即拍照
                     </button>
                 </div>
             </div>

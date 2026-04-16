@@ -1,89 +1,58 @@
 # ============================================================
-# WebRTC-Live Docker 镜像构建文件
+# WebRTC-Live Docker 镜像构建文件 (生产规范版)
 #
-# 功能描述：构建基于 Python Flask + SRS 的 WebRTC 实时直播服务容器
-#           包含后端代理服务、前端静态资源、录制文件存储目录
+# 功能描述：构建基于 Python Flask 的 WebRTC 实时直播服务容器
+#           遵循 Google 编程规范，支持非特权用户运行
 #
 # 架构说明：
-#   - 使用轻量级 Python slim 镜像减小体积
-#   - Gunicorn 作为生产级 WSGI 服务器（多进程模式）
-#   - 通过环境变量配置 SRS 连接地址和流媒体参数
-#   - 前后端打包在统一容器内，简化部署
+#   - 基础镜像: python:3.11-slim (最小化攻击面)
+#   - 进程管理: Gunicorn (生产级 WSGI 容器)
+#   - 权限管控: 切换至 appuser 运行，确保容器逃逸防护
 #
-# 作者：WebRTC-Live Project
-# 版本：1.0.0
-# 最后修改日期：2026-03-30
+# 作者：Antigravity (资深架构师)
+# 版本：1.1.0 (PaaS 规范版)
 # ============================================================
 
-# ============================================================
-# 基础镜像选择
-# ============================================================
-# 使用 Python 3.11-slim 轻量级镜像
-# - slim 版本仅包含 Python 运行所需的最小包，镜像体积小
-# - 3.11 版本提供更好的性能和类型提示支持
+# 阶段 1: 基础镜像与环境准备
 FROM python:3.11-slim
 
-# ============================================================
-# 工作目录设置
-# ============================================================
-# 设置容器内的工作目录为 /app
-# 后续的 COPY、CMD 等命令将基于此目录执行
+# 设置工作目录
 WORKDIR /app
 
-# ============================================================
-# Python 依赖安装
-# ============================================================
-# 1. 首先复制依赖清单文件（利用 Docker 层缓存）
-#    Docker 会检测 requirements.txt 是否变化，未变化时直接使用缓存层
-COPY backend/requirements.txt .
+# 设置环境变量，确保 Python 输出直接同步到日志
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    FLASK_APP=backend/app.py \
+    FLASK_PORT=5000
 
-# 2. 安装依赖包
-#    - --no-cache-dir: 不缓存下载的包，减小镜像体积
-#    - -r requirements.txt: 从清单文件读取所有依赖
+# 安装系统级依赖 (如果需要)
+# RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
+
+# 阶段 2: 依赖安装
+# 优先复制 requirements.txt 以利用缓存
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ============================================================
-# 应用代码复制
-# ============================================================
-# 复制后端 Python 代码到容器内
-# 后端包含 Flask 应用、API 路由、业务逻辑
+# 阶段 3: 应用部署与权限调整
+# 复制后端代码
 COPY backend/ ./backend/
-
-# 复制前端静态资源到容器内
-# 前端包含 HTML、CSS、JavaScript 文件
+# 复制前端资源
 COPY frontend/ ./frontend/
 
-# ============================================================
-# 数据目录初始化
-# ============================================================
-# 创建录制文件存储目录
-# 用于存储浏览器上传的录制视频文件
-# -p 参数确保父目录存在时不会报错
-RUN mkdir -p /app/backend/recordings
+# 创建录制文件夹并预设权限
+# PVE PaaS 规范: 必须在切换 USER 前完成权限调整
+RUN mkdir -p /app/backend/recordings && \
+    groupadd -r appuser && \
+    useradd -r -g appuser appuser && \
+    chown -R appuser:appuser /app
 
-# ============================================================
-# 环境变量配置
-# ============================================================
-# 指定 Flask 应用入口点
-ENV FLASK_APP=backend/app.py
+# 阶段 4: 切换到非特权用户
+USER appuser
 
-# 指定 Flask 监听端口（默认 5000）
-# 实际监听地址通过运行时环境变量 FLASK_HOST 控制
-ENV FLASK_PORT=5000
+# 暴露 Flask 默认端口 (仅元数据声明)
+EXPOSE 5000
 
-# 禁用 Python 输出缓冲
-# - 确保日志实时输出到 Docker 容器日志
-# - 便于运维监控和调试
-ENV PYTHONUNBUFFERED=1
-
-# ============================================================
-# 容器启动命令
-# ============================================================
-# 使用 Gunicorn 作为生产级 WSGI 服务器
-# Gunicorn 是成熟的 Python WSGI HTTP 服务器，支持多进程并发
-#
-# 参数说明：
-#   --bind 0.0.0.0:5000  : 监听所有网络接口的 5000 端口
-#   --workers 4             : 启动 4 个工作进程（可根据 CPU 核心数调整）
-#   backend.app:app         : WSGI 应用入口（模块:实例）
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "backend.app:app"]
+# 启动命令：使用 Gunicorn 运行 Flask 应用
+# --bind: 监听容器所有网卡的 5000 端口
+# --workers: 建议设置为 (2 * CPU核心数) + 1
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "3", "--timeout", "120", "backend.app:app"]

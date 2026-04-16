@@ -573,6 +573,73 @@ body::before {
 }
 
 /* ============================================================
+ * 音频设置卡片专属样式 (新增)
+ * ============================================================ */
+.audio-options-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: var(--transition-normal);
+}
+
+.audio-options-card:hover {
+    background: var(--bg-glass-hover);
+    border-color: var(--border-glow);
+}
+
+.audio-option-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.25rem 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    transition: var(--transition-fast);
+}
+
+.audio-option-item:hover {
+    color: var(--text-primary);
+}
+
+.audio-option-item input[type="checkbox"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--bg-deepest);
+    border: 2px solid var(--text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition-fast);
+}
+
+.audio-option-item input[type="checkbox"]:checked {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.audio-option-item input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.option-label {
+    flex: 1;
+}
+
+/* ============================================================
  * 日志面板
  * ============================================================ */
 .log-panel {

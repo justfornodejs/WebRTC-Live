@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流控看板 - WebRTC PaaS 管理中心</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-start);
+            margin: 0.5rem 0;
+        }
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stream-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.75rem;
+        }
+        .stream-table th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .stream-row {
+            background: var(--bg-card);
+            transition: var(--transition-normal);
+        }
+        .stream-row:hover {
+            background: var(--bg-glass-hover);
+        }
+        .stream-row td {
+            padding: 1.25rem 1rem;
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .stream-row td:first-child { border-left: 1px solid var(--border-subtle); border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+        .stream-row td:last-child { border-right: 1px solid var(--border-subtle); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); }
+        .badge-warn { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .client-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .client-tag {
+            font-size: 0.7rem;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--text-secondary);
+        }
+        .publisher-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <div class="logo-icon">📊</div>
+            <span>Antigravity Dashboard</span>
+        </a>
+        <ul class="navbar-nav">
+            <li><a href="/">首页</a></li>
+            <li><a href="/publish.html">推流端</a></li>
+            <li><a href="/play.html">播放端</a></li>
+            <li><a href="/admin.html" class="active">管理看板</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-container">
+        <header class="page-header">
+            <h1>流媒体实时监控</h1>
+            <p class="subtitle" id="serverTimeText">正在同步 SRS 服务器状态...</p>
+        </header>
+
+        <section class="stats-grid">
+            <div class="glass-card stat-card">
+                <div class="stat-label">活跃流数量</div>
+                <div class="stat-value" id="totalStreams">0</div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-label">总客户端连接</div>
+                <div class="stat-value" id="totalClients">0</div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-label">服务器负载</div>
+                <div class="stat-value" id="serverLoad">Stable</div>
+            </div>
+        </section>
+
+        <section class="glass-card">
+            <div class="card-header">
+                <div class="icon cyan">📡</div>
+                <div>
+                    <h2>活跃直播流列表</h2>
+                    <p>展示推流源及与之关联的所有播放器终端</p>
+                </div>
+            </div>
+
+            <table class="stream-table">
+                <thead>
+                    <tr>
+                        <th>流名称 (Stream ID)</th>
+                        <th>推流状态 (Publisher)</th>
+                        <th>码率 (kbps)</th>
+                        <th>订阅数</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="streamList">
+                    <tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">正在扫描活跃流...</td></tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

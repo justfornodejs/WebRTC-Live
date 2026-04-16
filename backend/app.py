@@ -338,6 +338,66 @@ def get_streams():
         return jsonify({"code": 503, "error": "无法获取流信息"}), 503
 
 
+@app.route("/api/admin/stats", methods=["GET"])
+def get_admin_stats():
+    """
+    聚合管理看板统计信息
+    一次性获取流列表和客户端连接详情，并进行关联分析
+    """
+    try:
+        # 1. 获取所有流
+        streams_resp = requests.get(f"{SRS_API_BASE}/api/v1/streams/", timeout=3, verify=False)
+        streams_data = streams_resp.json()
+
+        # 2. 获取所有客户端
+        clients_resp = requests.get(f"{SRS_API_BASE}/api/v1/clients/", timeout=3, verify=False)
+        clients_data = clients_resp.json()
+
+        # 3. 关联分析
+        # 按流 ID 分组客户端
+        active_streams = []
+        for stream in streams_data.get("streams", []):
+            stream_id = stream.get("id")
+            stream_name = stream.get("name")
+            
+            # 计算拉流人数（type 为 play 的 client）
+            subscribers = [
+                c for c in clients_data.get("clients", []) 
+                if c.get("stream") == stream_id and c.get("type") == "play"
+            ]
+            
+            # 查找推流端信息
+            publisher = next((
+                c for c in clients_data.get("clients", []) 
+                if c.get("stream") == stream_id and c.get("type") == "publish"
+            ), None)
+
+            active_streams.append({
+                "id": stream_id,
+                "name": stream_name,
+                "app": stream.get("app"),
+                "vhost": stream.get("vhost"),
+                "bitrate_kbps": int(stream.get("kbps", 0)),
+                "clients_count": len(subscribers),
+                "has_publisher": publisher is not None,
+                "publisher_ip": publisher.get("ip") if publisher else "N/A",
+                "subscribers": [{"id": s["id"], "ip": s["ip"], "alive": s["alive"]} for s in subscribers]
+            })
+
+        return jsonify({
+            "code": 0,
+            "summary": {
+                "total_streams": len(active_streams),
+                "total_clients": len(clients_data.get("clients", [])),
+                "server_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            },
+            "streams": active_streams
+        })
+    except Exception as e:
+        logger.error(f"[看板数据] 获取失败: {e}")
+        return jsonify({"code": 500, "error": str(e)}), 500
+
+
 # ============================================================
 # 录制文件管理 API
 # ============================================================
