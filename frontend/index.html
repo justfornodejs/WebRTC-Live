@@ -1,47 +1,10 @@
 <!DOCTYPE html>
-<!--
-    ============================================================
-    WebRTC-Live 项目首页
-    ============================================================
-    功能描述：
-        展示项目介绍、系统架构、核心特性和技术参数
-    设计理念：
-        - 深色玻璃拟态风格
-        - 响应式布局，适配桌面和移动端
-        - 清晰的信息层级，突出核心功能
-    页面结构：
-        1. 导航栏：项目 Logo 和页面链接
-        2. Hero 区域：主标题和行动按钮
-        3. 架构图：展示系统组件和数据流向
-        4. 特性卡片：展示六大核心功能
-        5. 统计栏：展示技术参数和性能指标
-        6. 页脚：版权和外部链接
-    作者：WebRTC-Live Project
-    最后修改日期：2026-03-30
--->
 <html lang="zh-CN">
 <head>
-    <!-- 字符编码设置 -->
     <meta charset="UTF-8">
-
-    <!-- 响应式视口配置 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- SEO 描述 -->
     <meta name="description" content="WebRTC + SRS 实时直播平台 - 基于 WebRTC 和 SRS 的低延迟音视频解决方案">
-
-    <!-- 页面标题 -->
     <title>WebRTC Live - 实时直播平台</title>
-
-    <!-- 字体预连接优化加载性能 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-
-    <!-- Google Fonts 加载 -->
-    <!-- Inter: 英文字体（无衬线，现代风格） -->
-    <!-- Noto Sans SC: 中文字体（无衬线，清晰易读） -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-
-    <!-- 全局样式表 -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -50,12 +13,13 @@
 <nav class="navbar">
     <a href="/" class="navbar-brand">
         <span class="logo-icon">📡</span>
-        <span>WebRTC Live</span>
+        <span class="brand-text">WebRTC Live</span>
     </a>
     <ul class="navbar-nav">
         <li><a href="/" class="active">🏠 首页</a></li>
         <li><a href="/publish.html">📤 推流</a></li>
         <li><a href="/play.html">📥 拉流</a></li>
+        <li><a href="/admin.html">📊 管理</a></li>
     </ul>
 </nav>
 
@@ -63,85 +27,56 @@
 <div class="main-container">
 
     <!-- Hero 区域 -->
-    <section class="hero">
-        <h1>WebRTC + SRS<br>实时直播平台</h1>
+    <section class="hero-section">
+        <div class="hero-bg"></div>
+        <h1 class="hero-title">
+            <span class="text-cyan">实时</span><span class="text-magenta">直播</span>平台
+        </h1>
         <p class="hero-subtitle">
-            基于 WebRTC 技术和 SRS 流媒体服务器，实现浏览器端低延迟（50-300ms）的实时音视频推流与播放，无需安装任何插件。
+            基于 WebRTC 技术和 SRS 流媒体服务器，实现浏览器端超低延迟（50-300ms）的实时音视频推流与播放，无需安装任何插件。
         </p>
         <div class="hero-actions">
             <a href="/publish.html" class="btn btn-primary btn-lg">📤 开始推流</a>
-            <a href="/play.html" class="btn btn-outline btn-lg">📥 观看直播</a>
-        </div>
-    </section>
-
-    <!-- 架构图 -->
-    <section class="architecture-section">
-        <h2>🏗️ 系统架构</h2>
-        <div class="glass-card">
-            <div class="arch-flow">
-                <div class="arch-node">
-                    <span class="node-icon">🖥️</span>
-                    <span class="node-label">推流端浏览器</span>
-                    <span class="node-desc">屏幕共享 / 摄像头</span>
-                </div>
-                <span class="arch-arrow">➜</span>
-                <div class="arch-node">
-                    <span class="node-icon">🐍</span>
-                    <span class="node-label">Flask 代理</span>
-                    <span class="node-desc">信令转发 / CORS</span>
-                </div>
-                <span class="arch-arrow">➜</span>
-                <div class="arch-node">
-                    <span class="node-icon">📡</span>
-                    <span class="node-label">SRS 服务器</span>
-                    <span class="node-desc">流媒体中转分发</span>
-                </div>
-                <span class="arch-arrow">➜</span>
-                <div class="arch-node">
-                    <span class="node-icon">👥</span>
-                    <span class="node-label">拉流端浏览器</span>
-                    <span class="node-desc">实时播放观看</span>
-                </div>
-            </div>
+            <a href="/play.html" class="btn btn-outline-magenta btn-lg">📥 观看直播</a>
         </div>
     </section>
 
     <!-- 特性卡片 -->
     <section class="features-grid mt-3">
         <div class="glass-card feature-card">
-            <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:#6366f1;">⚡</div>
+            <div class="feature-icon cyan">⚡</div>
             <h3>超低延迟</h3>
             <p>基于 WebRTC 协议，端到端延迟可控制在 50-300ms，远优于 HLS/RTMP，完美适配实时同屏场景。</p>
         </div>
-        <div class="glass-card feature-card">
-            <div class="feature-icon" style="background:rgba(6,182,212,0.15);color:#06b6d4;">🔌</div>
+        <div class="glass-card feature-card magenta">
+            <div class="feature-icon magenta">🔌</div>
             <h3>零插件</h3>
-            <p>纯浏览器原生 API 实现，不依赖 Flash 或任何浏览器插件，主流浏览器（Chrome/Firefox/Edge）开箱即用。</p>
+            <p>纯浏览器原生 API 实现，不依赖 Flash 或任何浏览器插件，主流浏览器开箱即用。</p>
         </div>
         <div class="glass-card feature-card">
-            <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:#10b981;">🖥️</div>
+            <div class="feature-icon cyan">🖥️</div>
             <h3>多源推流</h3>
-            <p>支持屏幕共享、摄像头、本地视频文件三种推流模式，满足教学、会议、直播等多种场景。</p>
+            <p>支持屏幕共享、摄像头、本地视频文件三种推流模式，满足多种场景需求。</p>
         </div>
-        <div class="glass-card feature-card">
-            <div class="feature-icon" style="background:rgba(244,63,94,0.15);color:#f43f5e;">📊</div>
+        <div class="glass-card feature-card magenta">
+            <div class="feature-icon magenta">📊</div>
             <h3>实时监控</h3>
             <p>推/拉流过程中实时展示分辨率、帧率、码率等统计信息，连接状态一目了然。</p>
         </div>
         <div class="glass-card feature-card">
-            <div class="feature-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">🐳</div>
+            <div class="feature-icon cyan">🐳</div>
             <h3>Docker 部署</h3>
             <p>SRS 服务器通过 Docker Compose 一键部署，开箱即用，降低运维成本。</p>
         </div>
-        <div class="glass-card feature-card">
-            <div class="feature-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">🔒</div>
+        <div class="glass-card feature-card magenta">
+            <div class="feature-icon magenta">🔒</div>
             <h3>安全传输</h3>
             <p>支持 HTTPS + DTLS 加密传输，WebRTC 媒体流自带 SRTP 加密，保障数据安全。</p>
         </div>
     </section>
 
     <!-- 技术参数 -->
-    <div class="glass-card stats-bar">
+    <div class="glass-card stats-bar mt-3">
         <div class="stat-item">
             <div class="stat-value">&lt;300ms</div>
             <div class="stat-label">端到端延迟</div>
@@ -166,6 +101,142 @@
 <footer class="footer">
     <p>WebRTC Live 实时直播平台 · 基于 <a href="https://webrtc.org" target="_blank">WebRTC</a> + <a href="https://ossrs.net" target="_blank">SRS</a></p>
 </footer>
+
+<style>
+/* 首页专属样式 */
+.hero-section {
+    text-align: center;
+    padding: 5rem 2rem;
+    position: relative;
+}
+
+.hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 50% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 70% 60%, rgba(255, 0, 255, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 1.25rem;
+    text-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+    position: relative;
+}
+
+.hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    position: relative;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+}
+
+.feature-card {
+    padding: 1.75rem;
+}
+
+.feature-card .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.feature-card .feature-icon.cyan {
+    background: rgba(0, 255, 255, 0.15);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+.feature-card .feature-icon.magenta {
+    background: rgba(255, 0, 255, 0.15);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+}
+
+.feature-card h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.feature-card p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.stats-bar {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary-cyan), var(--primary-magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.footer {
+    text-align: center;
+    padding: 2rem;
+    margin-top: 4rem;
+    border-top: 1px solid var(--border-cyan);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.footer a {
+    color: var(--primary-cyan);
+}
+
+.footer a:hover {
+    text-shadow: 0 0 10px var(--primary-cyan);
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .hero-section {
+        padding: 3rem 1rem;
+    }
+}
+</style>
 
 </body>
 </html>

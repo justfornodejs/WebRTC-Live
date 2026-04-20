@@ -1,51 +1,10 @@
 <!DOCTYPE html>
-<!--
-    ============================================================
-    WebRTC-Live 推流页面
-    ============================================================
-    功能描述：
-        实现浏览器端 WebRTC 推流功能，支持多种媒体源
-    核心功能：
-        - 屏幕共享：捕获整个屏幕、窗口或标签页
-        - 摄像头捕获：采集本地摄像头画面
-        - 视频文件推流：播放本地视频文件并推流
-        - 实时统计：显示分辨率、帧率、码率
-        - 本地录制：录制推流画面并下载/上传
-    页面布局：
-        1. 视频预览区：显示本地推流画面和状态
-        2. 推流控制：选择媒体源和控制推流开关
-        3. 实时统计：展示推流质量数据
-        4. 运行日志：显示推流过程详细日志
-        5. 录制面板：控制本地录制功能
-    技术实现：
-        - WebRTC RTCPeerConnection 建立连接
-        - MediaDevices API 采集媒体流
-        - MediaRecorder API 录制功能
-        -通过后端代理与 SRS 交换信令
-    作者：WebRTC-Live Project
-    最后修改日期：2026-03-30
--->
 <html lang="zh-CN">
 <head>
-    <!-- 字符编码设置 -->
     <meta charset="UTF-8">
-
-    <!-- 响应式视口配置 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- SEO 描述 -->
     <meta name="description" content="WebRTC 推流 - 屏幕共享或摄像头实时推流到 SRS 服务器">
-
-    <!-- 页面标题 -->
     <title>推流 - WebRTC Live</title>
-
-    <!-- 字体预连接 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-
-    Google Fonts 字体加载 -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-
-    <!-- 全局样式表 -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -53,12 +12,13 @@
 <nav class="navbar">
     <a href="/" class="navbar-brand">
         <span class="logo-icon">📡</span>
-        <span>WebRTC Live</span>
+        <span class="brand-text">WebRTC Live</span>
     </a>
     <ul class="navbar-nav">
         <li><a href="/">🏠 首页</a></li>
         <li><a href="/publish.html" class="active">📤 推流</a></li>
         <li><a href="/play.html">📥 拉流</a></li>
+        <li><a href="/admin.html">📊 管理</a></li>
     </ul>
 </nav>
 
@@ -68,160 +28,135 @@
         <p class="subtitle">选择推流源并将实时画面推送到 SRS 流媒体服务器</p>
     </div>
 
-    <div class="layout-grid">
-        <!-- 左侧：视频预览 -->
-        <div>
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="icon blue">🎬</div>
-                    <div>
-                        <h2>推流预览</h2>
-                        <p>本地画面实时预览</p>
-                    </div>
-                </div>
-                <div class="video-container">
-                    <video id="previewVideo" muted playsinline></video>
-                    <div id="videoPlaceholder" class="video-placeholder">
-                        <span class="placeholder-icon">📺</span>
-                        <p>点击「开始推流」采集画面</p>
-                    </div>
-                    <div id="videoOverlay" class="video-overlay hidden">
-                        <span class="video-badge live">● LIVE</span>
-                        <span id="liveDuration" class="video-badge info">00:00:00</span>
-                    </div>
-                </div>
-                <div class="status-bar">
-                    <div class="status-indicator">
-                        <span id="statusDot" class="status-dot idle"></span>
-                        <span id="statusText">未推流</span>
-                    </div>
-                    <span id="durationText" class="text-muted text-sm">00:00:00</span>
-                </div>
+    <!-- 主视频预览区 -->
+    <div class="glass-card">
+        <div class="video-container wide">
+            <video id="previewVideo" muted playsinline></video>
+            <div id="videoPlaceholder" class="video-placeholder">
+                <span class="placeholder-icon">📺</span>
+                <p>点击「开始推流」采集画面</p>
+            </div>
+            <div id="videoOverlay" class="video-overlay hidden">
+                <span class="video-badge live">● LIVE</span>
+                <span id="liveDuration" class="video-badge info">00:00:00</span>
             </div>
         </div>
-
-        <!-- 右侧：控制面板 -->
-        <div class="sidebar-stack">
-            <!-- 推流控制 -->
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="icon emerald">⚙️</div>
-                    <div>
-                        <h2>推流控制</h2>
-                        <p>选择推流源并控制推流</p>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">推流源</label>
-                    <select id="sourceSelect" class="form-select">
-                        <option value="screen">🖥️ 屏幕共享</option>
-                        <option value="camera">📷 摄像头</option>
-                        <option value="video-file">📁 视频文件</option>
-                    </select>
-                </div>
-                <div id="cameraDeviceGroup" class="form-group hidden">
-                    <label class="form-label">选择摄像头</label>
-                    <select id="videoSource" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">音频设置</label>
-                    <div class="audio-options-card">
-                        <label class="audio-option-item">
-                            <input type="checkbox" id="enableAudio" checked>
-                            <span class="option-label">🎙️ 开启麦克风人声</span>
-                        </label>
-                        <label class="audio-option-item" id="systemAudioGroup">
-                            <input type="checkbox" id="enableSystemAudio">
-                            <span class="option-label">🔊 捕获系统背景音 (需在屏幕分享时勾选)</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="btn-group mt-2">
-                    <button id="startPublishBtn" class="btn btn-primary btn-block">
-                        ▶️ 开始推流
-                    </button>
-                    <button id="stopPublishBtn" class="btn btn-danger btn-block hidden">
-                        ⏹️ 停止推流
-                    </button>
-                    <button id="snapshotBtn" class="btn btn-outline btn-block" disabled title="拍照并保存当前画面">
-                        📸 立即拍照
-                    </button>
-                </div>
+        <div class="video-status-bar">
+            <div class="status-indicator">
+                <span id="statusDot" class="status-dot idle"></span>
+                <span id="statusText">未推流</span>
             </div>
-
-            <!-- 实时统计 -->
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="icon cyan">📊</div>
-                    <div>
-                        <h2>实时统计</h2>
-                        <p>推流质量数据</p>
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-                    <div style="padding:0.5rem;background:var(--bg-glass);border-radius:var(--radius-sm);">
-                        <div class="text-muted text-sm">分辨率</div>
-                        <div id="statResolution" style="font-weight:700;margin-top:2px;">-</div>
-                    </div>
-                    <div style="padding:0.5rem;background:var(--bg-glass);border-radius:var(--radius-sm);">
-                        <div class="text-muted text-sm">帧率</div>
-                        <div id="statFramerate" style="font-weight:700;margin-top:2px;">-</div>
-                    </div>
-                    <div style="padding:0.5rem;background:var(--bg-glass);border-radius:var(--radius-sm);grid-column:1/-1;">
-                        <div class="text-muted text-sm">码率</div>
-                        <div id="statBitrate" style="font-weight:700;margin-top:2px;">-</div>
-                    </div>
-                </div>
+            <div class="stats">
+                <span>分辨率: <span id="statResolution">-</span></span>
+                <span>帧率: <span id="statFramerate">-</span></span>
+                <span>码率: <span id="statBitrate">-</span></span>
             </div>
-
-            <!-- 日志 -->
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="icon rose">📋</div>
-                    <div>
-                        <h2>运行日志</h2>
-                        <p>推流过程详细日志</p>
-                    </div>
-                </div>
-                <div id="logPanel" class="log-panel"></div>
+            <div class="actions">
+                <button id="snapshotBtn" class="btn btn-outline btn-sm" disabled>📸 拍照</button>
             </div>
         </div>
+    </div>
 
-        <!-- 录制面板 -->
+    <!-- 底部控制栏 -->
+    <div class="control-bar">
+        <!-- 推流源选择 -->
         <div class="glass-card">
             <div class="card-header">
-                <div class="icon purple">🔴</div>
+                <div class="icon cyan">📹</div>
                 <div>
-                    <h2>本地录制</h2>
-                    <p>录制当前推流画面</p>
+                    <h2>推流源</h2>
+                    <p>选择媒体来源</p>
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">录制保存方式</label>
-                <select id="recordSaveMode" class="form-select">
-                    <option value="local">💾 本地下载</option>
-                    <option value="server">☁️ 服务器存储</option>
+                <select id="sourceSelect" class="form-select">
+                    <option value="screen">🖥️ 屏幕共享</option>
+                    <option value="camera">📷 摄像头</option>
+                    <option value="video-file">📁 视频文件</option>
                 </select>
             </div>
-            <div class="btn-group mt-2">
-                <button id="startRecordBtn" class="btn btn-danger btn-block" disabled>
-                    🔴 开始录制
-                </button>
-                <button id="stopRecordBtn" class="btn btn-warning btn-block hidden">
-                    ⏹️ 停止录制
-                </button>
-                <button id="downloadRecordBtn" class="btn btn-success btn-block hidden">
-                    ⬇️ 下载视频
-                </button>
+            <div id="cameraDeviceGroup" class="form-group hidden">
+                <label class="form-label">选择摄像头</label>
+                <select id="videoSource" class="form-select"></select>
             </div>
-            <div id="recordingInfo" class="mt-2 text-center" style="display:none;">
-                <div class="text-muted text-sm">录制时长</div>
-                <div id="recordDuration" style="font-weight:700;font-size:1.25rem;">00:00:00</div>
-                <div id="recordProgress" class="mt-1 text-muted text-sm hidden">上传中... 0%</div>
+        </div>
+
+        <!-- 推流控制 -->
+        <div class="glass-card magenta">
+            <div class="card-header">
+                <div class="icon magenta">⚙️</div>
+                <div>
+                    <h2>推流控制</h2>
+                    <p>控制推流状态</p>
+                </div>
             </div>
-            <p class="text-muted text-sm mt-2">
-                💡 提示：录制功能需要浏览器支持 MediaRecorder API。
-            </p>
+            <div class="btn-group">
+                <button id="startPublishBtn" class="btn btn-primary btn-block">▶️ 开始推流</button>
+                <button id="stopPublishBtn" class="btn btn-danger btn-block hidden">⏹️ 停止推流</button>
+            </div>
+            <p class="text-muted text-sm mt-2">💡 提示：首次推流需要授权浏览器访问摄像头/麦克风</p>
+        </div>
+
+        <!-- 音频设置 -->
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="icon cyan">🎙️</div>
+                <div>
+                    <h2>音频设置</h2>
+                    <p>配置音频源</p>
+                </div>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="enableAudio" checked>
+                <span>🎙️ 开启麦克风人声</span>
+            </div>
+            <div class="checkbox-item" id="systemAudioGroup">
+                <input type="checkbox" id="enableSystemAudio">
+                <span>🔊 捕获系统背景音</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志面板 (可折叠) -->
+    <div class="glass-card mt-2">
+        <div class="card-header" style="cursor: pointer; margin-bottom: 0; padding-bottom: 0; border-bottom: none;" onclick="toggleLogPanel()">
+            <div class="icon magenta">📋</div>
+            <div style="flex: 1;">
+                <h2>运行日志</h2>
+                <p>推流过程详细日志</p>
+            </div>
+            <span id="logToggle" style="color: var(--text-muted);">▼</span>
+        </div>
+        <div id="logPanelContainer" style="margin-top: 1rem;">
+            <div id="logPanel" class="log-panel"></div>
+        </div>
+    </div>
+
+    <!-- 录制面板 -->
+    <div class="glass-card mt-2">
+        <div class="card-header">
+            <div class="icon error">🔴</div>
+            <div>
+                <h2>本地录制</h2>
+                <p>录制当前推流画面</p>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">录制保存方式</label>
+            <select id="recordSaveMode" class="form-select">
+                <option value="local">💾 本地下载</option>
+                <option value="server">☁️ 服务器存储</option>
+            </select>
+        </div>
+        <div class="btn-group mt-2">
+            <button id="startRecordBtn" class="btn btn-danger btn-block" disabled>🔴 开始录制</button>
+            <button id="stopRecordBtn" class="btn btn-outline-magenta btn-block hidden">⏹️ 停止录制</button>
+            <button id="downloadRecordBtn" class="btn btn-success btn-block hidden">⬇️ 下载视频</button>
+        </div>
+        <div id="recordingInfo" class="mt-2 text-center" style="display:none;">
+            <div class="text-muted text-sm">录制时长</div>
+            <div id="recordDuration" style="font-weight:700; font-size:1.25rem; color: var(--primary-cyan);">00:00:00</div>
+            <div id="recordProgress" class="mt-1 text-muted text-sm hidden">上传中... 0%</div>
         </div>
     </div>
 </div>
@@ -230,6 +165,19 @@
     <p>WebRTC Live · 基于 <a href="https://webrtc.org" target="_blank">WebRTC</a> + <a href="https://ossrs.net" target="_blank">SRS</a></p>
 </footer>
 
+<script>
+function toggleLogPanel() {
+    const container = document.getElementById('logPanelContainer');
+    const toggle = document.getElementById('logToggle');
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        toggle.textContent = '▼';
+    } else {
+        container.style.display = 'none';
+        toggle.textContent = '▶';
+    }
+}
+</script>
 <script src="js/utils.js"></script>
 <script src="js/record.js"></script>
 <script src="js/publish.js"></script>
